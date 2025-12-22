@@ -2,6 +2,16 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from sklearn.preprocessing import LabelEncoder
+from data_analysis import perform_comprehensive_eda
+
+# Visualization Libraries
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+
+# Set visualization style
+plt.style.use("seaborn-v0_8-darkgrid")
+sns.set_palette("husl")
 
 
 def load_and_preprocess_data(filepath):
@@ -132,6 +142,23 @@ def prepare_features_for_modeling(df):
         "sponsorship_letter",
     ]
 
+    # Numerical columns
+    numerical_cols = [
+        "applicant_age",
+        "countries_visited",
+        "schengen_visits",
+        "us_visits",
+        "uk_visits",
+        "previous_rejections",
+        "submission_month",
+        "submission_day_of_week",
+        "submission_quarter",
+        "travel_score",
+        "doc_quality_score",
+        "risk_score",
+        "high_scrutiny_route",
+    ]
+
     # Create a copy to avoid modifying original dataframe
     df_model = df.copy()
 
@@ -146,7 +173,12 @@ def prepare_features_for_modeling(df):
         df_model[col + "_encoded"] = le.fit_transform(df_model[col].astype(str))
         label_encoders[col] = le
 
-    return df_model, label_encoders
+    # Select feature columns
+    feature_cols = (
+        [col + "_encoded" for col in categorical_cols] + binary_cols + numerical_cols
+    )
+
+    return df_model, feature_cols, label_encoders
 
 
 # Main execution
@@ -155,7 +187,7 @@ if __name__ == "__main__":
 
     df = engineer_features(df)
 
-    df_model, label_encoders = prepare_features_for_modeling(df)
+    df_model, feature_cols, label_encoders = prepare_features_for_modeling(df)
     print(df_model.head())
     print(df_model.info())
     print(
@@ -170,3 +202,5 @@ if __name__ == "__main__":
     print(f"\nMin: {df_model['processing_days'].min()} days")
     print(f"\nMax: {df_model['processing_days'].max()} days")
     print(f"\nStd Dev: {df_model['processing_days'].std():.2f} days")
+
+    perform_comprehensive_eda(df, output_dir="eda_outputs")
