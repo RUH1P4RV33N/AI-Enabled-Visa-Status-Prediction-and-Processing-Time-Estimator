@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import os
 from datetime import datetime
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from data_analysis import perform_comprehensive_eda
@@ -403,20 +404,30 @@ class VisaPredictionSystem:
 
     def save_models(self, prefix="visa_model"):
         """Save trained models"""
-        print(f"\nSaving models with prefix '{prefix}'...")
-        joblib.dump(self.status_model, f"../models/{prefix}_status.pkl")
-        joblib.dump(self.time_model, f"../models/{prefix}_time.pkl")
-        joblib.dump(self.label_encoders, f"../models/{prefix}_encoders.pkl")
-        joblib.dump(self.feature_cols, f"../models/{prefix}_features.pkl")
+
+        models_dir = "../models"  # Go up one level from src, then into models/
+
+        # Create folder if it does not exist
+        os.makedirs(models_dir, exist_ok=True)
+
+        print(f"\nSaving models to '{models_dir}/' with prefix '{prefix}'...")
+
+        joblib.dump(self.status_model, f"{models_dir}/{prefix}_status.pkl")
+        joblib.dump(self.time_model, f"{models_dir}/{prefix}_time.pkl")
+        joblib.dump(self.label_encoders, f"{models_dir}/{prefix}_encoders.pkl")
+        joblib.dump(self.feature_cols, f"{models_dir}/{prefix}_features.pkl")
+
         print("Models saved successfully")
 
     def load_models(self, prefix="visa_model"):
         """Load trained models"""
-        print(f"\nLoading models with prefix '{prefix}'...")
-        self.status_model = joblib.load(f"../models/{prefix}_status.pkl")
-        self.time_model = joblib.load(f"../models/{prefix}_time.pkl")
-        self.label_encoders = joblib.load(f"../models/{prefix}_encoders.pkl")
-        self.feature_cols = joblib.load(f"../models/{prefix}_features.pkl")
+        models_dir = "../models"  # Go up one level from src, then into models/
+        print(f"\nLoading models from '{models_dir}/' with prefix '{prefix}'...")
+        self.status_model = joblib.load(f"{models_dir}/{prefix}_status.pkl")
+        self.time_model = joblib.load(f"{models_dir}/{prefix}_time.pkl")
+        self.label_encoders = joblib.load(f"{models_dir}/{prefix}_encoders.pkl")
+        self.feature_cols = joblib.load(f"{models_dir}/{prefix}_features.pkl")
+
         print("Models loaded successfully")
 
     def predict(self, application_data):
