@@ -31,7 +31,6 @@ Thumbs.db
 *.h5
 *.pt
 *.pth
-models/
 checkpoints/
 
 # Logs
