@@ -402,6 +402,13 @@ st.markdown(
         margin-bottom: 0.5rem;
     }}
     
+    /* Cursor pointer for all interactive elements */
+    .stSelectbox select,
+    .stSelectbox > div,
+    .stNumberInput input {{
+        cursor: pointer !important;
+    }}
+    
     .stSelectbox > div > div,
     .stNumberInput > div > div > input {{
         border-radius: 10px;
@@ -409,12 +416,14 @@ st.markdown(
         background: #FAFBFC;
         transition: all 0.2s ease;
         font-size: 0.9375rem;
+        cursor: pointer;
     }}
     
     .stSelectbox > div > div:hover,
     .stNumberInput > div > div > input:hover {{
         border-color: #4C6EF5;
         background: white;
+        cursor: pointer;
     }}
     
     .stSelectbox > div > div:focus-within,
@@ -863,6 +872,9 @@ st.markdown("</div>", unsafe_allow_html=True)
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     if st.button("GET PREDICTION", use_container_width=True):
+        # Reset states before starting new prediction
+        st.session_state.show_result = False
+        st.session_state.prediction_result = None
         st.session_state.is_loading = True
         st.rerun()
 

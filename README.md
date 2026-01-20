@@ -1,256 +1,60 @@
-# AI Enabled Visa Status Prediction and Processing Time Estimator
+# AI-Enabled Visa Status Prediction and Processing Time Estimator
 
 ## Overview
 
-This module handles data loading, preprocessing, and feature engineering for visa application data. It transforms raw CSV data into ML-ready features.
+An intelligent web application built with **Streamlit** that predicts visa application outcomes and estimates processing times using advanced machine learning algorithms. The system analyzes 25+ data points including travel history, documentation quality, and applicant demographics to provide accurate predictions with confidence scores.
 
-## Features
+## 🌟 Features
 
-- Date parsing and temporal feature extraction
-- Composite feature engineering (travel score, risk score, doc quality)
-- Categorical encoding with Label Encoders
-- Binary feature conversion
+- **Real-time Predictions**: Instant visa status prediction (Approved/Rejected)
+- **Processing Time Estimation**: Accurate processing time predictions in days and weeks
+- **Confidence Scoring**: Probability analysis for both approval and rejection
+- **Interactive UI**: Modern, responsive design with smooth animations
+- **Auto-training**: Automatically trains models on first run if not present
+- **Comprehensive Analysis**: Processes travel history, documentation quality, and risk factors
+- **High Scrutiny Detection**: Identifies sensitive country routes with strict processing
 
-## Quick Start
+## 🚀 Live Demo
 
+The application is deployed on **Streamlit Cloud** and accessible at:
+
+https://visa-application-predictor.streamlit.app/
+
+
+## 📋 Prerequisites
+
+- Python 3.8 or higher
+- pip package manager
+- Virtual environment (recommended)
+
+## 🔧 Installation
+
+### 1. Clone the Repository
 ```bash
-# Install dependencies
+git clone <repository-url>
+cd visa-prediction-app
+```
+
+### 2. Create Virtual Environment
+```bash
+python -m venv venv
+
+# On Windows
+venv\Scripts\activate
+
+# On macOS/Linux
+source venv/bin/activate
+```
+
+### 3. Install Dependencies
+```bash
 pip install -r requirements.txt
-
-# Run preprocessing
-cd src
-python main.py
 ```
 
-## Functions
+## 📦 Required Dependencies
 
-### `load_and_preprocess_data(filepath)`
-Loads CSV and extracts temporal features.
-
-**Input:** Path to CSV file  
-**Output:** Preprocessed DataFrame with `processing_days`, `submission_month`, `submission_quarter`
-
-### `engineer_features(df)`
-Creates composite features:
-- `travel_score`: Weighted travel history (0-1 scale)
-- `doc_quality_score`: Documentation completeness (0-1 scale)
-- `risk_score`: Risk assessment (0-1 scale)
-- `age_group`: Categorical age bins
-- `travel_experience`: Travel experience level
-- `high_scrutiny_route`: Binary flag for sensitive routes
-
-### `prepare_features_for_modeling(df)`
-Encodes categorical variables for ML models.
-
-**Output:** 
-- `df_model`: Encoded DataFrame
-- `label_encoders`: Dictionary of LabelEncoder objects
-
-prepare_features_for_modeling(df)
-Prepares data for machine learning models.
-Encoding Strategy:
-
-Binary columns: Converted to 0/1 integers
-Categorical columns: Label encoded with _encoded suffix
-Numerical columns: Kept as-is
-
-Output:
-
-df_model: Fully encoded DataFrame
-feature_cols: List of all feature column names for modeling
-label_encoders: Dictionary of LabelEncoder objects for decoding
-
-data_analysis.py
-perform_comprehensive_eda(df, output_dir="eda_outputs")
-Generates 8 comprehensive visualization sets covering:
-
-Target Distribution (01_target_distribution.png)
-
-Application status pie chart
-Processing time histogram with mean line
-
-
-Visa Category Analysis (02_visa_category_analysis.png)
-
-Application counts by category
-Approval rates by category
-Processing time boxplots
-Category vs Season heatmap
-
-
-Geographic Analysis (03_geographic_analysis.png)
-
-Top 10 applicant countries
-Top 10 destination countries
-Country-wise approval rates
-Destination-wise processing times
-
-
-Correlation Analysis (04_correlation_analysis.png)
-
-Full feature correlation matrix
-Processing time correlation bar chart
-
-
-Travel History Impact (05_travel_history_impact.png)
-
-Travel experience vs approval
-Previous rejections impact
-Overstay history impact
-Travel score distributions
-
-
-Document Quality Analysis (06_document_quality_analysis.png)
-
-Document completeness impact
-Financial documentation impact
-Quality score vs processing time scatter
-Risk score distributions
-
-
-Seasonal Patterns (07_seasonal_patterns.png)
-
-Applications by season (pie chart)
-Processing time by season
-Monthly application trends
-Seasonal approval rates
-
-
-Demographics Analysis (08_demographics_analysis.png)
-
-Age distribution histogram
-Age group approval rates
-Employment status impact
-Marital status impact
-
-
-
-Output: All visualizations saved to output_dir with 300 DPI quality
-
-## Input Data Requirements
-
-CSV file with columns:
-- `submission_date`, `decision_date` (DD-MM-YYYY format)
-- `applicant_country`, `destination_country`, `visa_category`
-- `countries_visited`, `schengen_visits`, `us_visits`, `uk_visits`
-- `applicant_age`, `previous_rejections`
-- Binary columns: `priority_processing`, `biometrics_completed`, `overstay_history`, etc.
-- Categorical: `season`, `gender`, `employment_status`, `marital_status`, `processing_office`
-
-## Output Features
-
-**Adding Features:**
-- `travel_score` = (countries×2 + schengen×4 + us×5 + uk×3) / 95
-- `doc_quality_score` = (complete×0.4 + supporting×0.3 + financial×0.3)
-- `risk_score` = (overstay×0.3 + rejections×0.15 + incomplete_docs×0.25 + ...)
-
-**Encoded Columns:**
-All categorical columns get `_encoded` suffix (e.g., `applicant_country_encoded`)
-
-## High Scrutiny Routes
-
-The module flags 22 country pairs for enhanced processing:
-- India/China/Pakistan → USA
-- Syria/Afghanistan/Iraq → Germany/UK
-- Nigeria → USA/UK
-- And more...
-
-## Model Training and Prediction
-
-### Visa Status Classification
-
-The system trains ensemble classifiers to predict visa application outcomes:
-
-**Models Evaluated:**
-- Random Forest Classifier (200 estimators, max_depth=20)
-- XGBoost Classifier (200 estimators, max_depth=10)
-- Gradient Boosting (150 estimators, max_depth=8)
-
-**Output:**
-- Best performing model selected based on accuracy
-- Classification report with precision, recall, F1-score
-- Top 10 most important features for prediction
-
-### Processing Time Regression
-
-Predicts estimated processing time in days:
-
-**Models Evaluated:**
-- Random Forest Regressor
-- XGBoost Regressor
-- Gradient Boosting Regressor
-
-**Metrics:**
-- MAE (Mean Absolute Error) in days
-- RMSE (Root Mean Squared Error)
-- R² Score
-- Top 10 features affecting processing time
-
-### VisaPredictionSystem Class
-
-A complete end-to-end prediction system for visa applications.
-
-#### Methods
-
-**`__init__()`**
-Initializes empty prediction system with placeholders for models and encoders.
-
-**`train(df)`**
-Trains both status classifier and processing time regressor.
-
-**Input:** Preprocessed DataFrame with all features  
-**Output:** 
-- `status_accuracy`: Classification accuracy score
-- `time_mae`: Mean Absolute Error for processing time prediction
-
-**Process:**
-- Splits data 80/20 train/test
-- Trains status classifier (approval/rejection)
-- Trains processing time regressor
-- Reports performance metrics
-
-**`save_models(prefix="visa_model")`**
-Persists trained models to disk.
-
-**Output Files:**
-- `{prefix}_status.pkl`: Status classification model
-- `{prefix}_time.pkl`: Processing time regression model
-- `{prefix}_encoders.pkl`: Label encoders dictionary
-- `{prefix}_features.pkl`: Feature column list
-
-**`load_models(prefix="visa_model")`**
-Loads previously trained models from disk.
-
-**`predict(application_data)`**
-Makes predictions for new visa applications.
-
-**Input:** Dictionary or DataFrame with application details  
-**Output:** Dictionary containing:
-```python
-{
-    "predicted_status": "Approved" or "Rejected",
-    "approval_probability": float (0-1),
-    "rejection_probability": float (0-1),
-    "estimated_processing_days": int,
-    "estimated_processing_weeks": float
-}
-```
-
-**Required Input Fields:**
-- `applicant_country`, `destination_country`
-- `application_type`, `visa_category`, `season`
-- `priority_processing`, `biometrics_completed`, `overstay_history`
-- `countries_visited`, `schengen_visits`, `us_visits`, `uk_visits`
-- `previous_rejections`, `applicant_age`
-- `gender`, `employment_status`, `marital_status`
-- `document_completeness`, `supporting_docs_provided`
-- `interview_required`, `financial_docs_provided`, `sponsorship_letter`
-- `processing_office`
-- `submission_month`, `submission_day_of_week`, `submission_quarter`
-
-## Dependencies
-
-```
+```txt
+streamlit
 pandas
 numpy
 scikit-learn
@@ -261,3 +65,268 @@ scipy
 joblib
 ```
 
+## 🏃 Running the Application
+
+### Local Development
+```bash
+streamlit run app.py
+```
+
+The application will open in your default browser at `http://localhost:8501`
+
+### First-Time Setup
+On the first run, the system will:
+1. Check for existing trained models
+2. If not found, automatically train models using the training dataset
+3. Save models to the `models/` directory
+4. Display training progress and metrics
+
+## 📁 Project Structure
+
+```
+visa-prediction-app/
+│
+├── app.py                          # Main Streamlit application
+├── src/
+│   ├── main.py
+|   ├── eda_outputs/                # EDA visualizations (auto-generated)
+│   └── data_analysis.py            # EDA and visualization functions
+│
+├── data/
+│   └── train.csv                   # Training dataset
+│
+├── models/                         # Saved ML models (auto-generated)
+│   ├── visa_model_status.pkl
+│   ├── visa_model_time.pkl
+│   ├── visa_model_encoders.pkl
+│   └── visa_model_features.pkl
+│
+├── public/
+│   └── images/
+│       ├── background.jpg          # Background image
+│       ├── heading-image.jpg       # Header image
+│       └── logo.png               # App logo
+│                   
+│
+├── requirements.txt                # Python dependencies
+└── README.md                       # Project documentation
+```
+
+## 🎯 How to Use
+
+### 1. Personal Information
+- Select **Applicant Country** and **Destination Country**
+- Enter **Age** (18-80 years)
+- Select **Gender**, **Visa Category**, and **Employment Status**
+- Choose **Marital Status** and **Application Type**
+
+### 2. Travel History
+- Enter number of **Countries Visited**
+- Specify visits to **Schengen**, **USA**, and **UK**
+- Enter **Previous Rejections** count
+- Indicate **Overstay History** (Yes/No)
+
+### 3. Documentation & Processing
+- Confirm **Document Completeness**
+- Indicate availability of **Supporting Documents**
+- Specify **Financial Documents** status
+- Select **Biometrics Completion** and **Priority Processing**
+- Choose **Processing Office**
+
+### 4. Get Prediction
+- Click the **"GET PREDICTION"** button
+- View detailed results including:
+  - Predicted Status (Approved/Rejected)
+  - Confidence Score
+  - Processing Time Estimate
+  - Probability Analysis
+
+## 🤖 Machine Learning Models
+
+### Status Classification
+The system evaluates three ensemble models and selects the best performer:
+- **Random Forest Classifier** (200 estimators, max_depth=20)
+- **XGBoost Classifier** (200 estimators, max_depth=10)
+- **Gradient Boosting Classifier** (150 estimators, max_depth=8)
+
+**Metrics:**
+- Accuracy, Precision, Recall, F1-Score
+- Feature importance analysis
+- Classification report
+
+### Processing Time Regression
+Predicts visa processing time in days:
+- **Random Forest Regressor**
+- **XGBoost Regressor**
+- **Gradient Boosting Regressor**
+
+**Metrics:**
+- MAE (Mean Absolute Error)
+- RMSE (Root Mean Squared Error)
+- R² Score
+
+## 🔍 Feature Engineering
+
+### Composite Features
+1. **Travel Score** (0-1 scale)
+   ```
+   (countries_visited × 2 + schengen_visits × 4 + us_visits × 5 + uk_visits × 3) / 95
+   ```
+
+2. **Documentation Quality Score** (0-1 scale)
+   ```
+   document_completeness × 0.4 + supporting_docs × 0.3 + financial_docs × 0.3
+   ```
+
+3. **Risk Score** (0-1 scale)
+   ```
+   overstay_history × 0.35 + previous_rejections × 0.2 + 
+   incomplete_docs × 0.2 + missing_support_docs × 0.15 + 
+   missing_financial_docs × 0.15 + high_scrutiny_penalty × 0.25
+   ```
+
+### Categorical Features
+- **Age Groups**: Minor, Young_Adult, Adult, Middle_Aged, Senior
+- **Travel Experience**: None, Limited, Moderate, Extensive
+
+### High Scrutiny Routes
+
+The system flags **34 country pairs** for enhanced processing and automatic rejection:
+
+**USA Routes:**
+- Afghanistan, Pakistan, Bangladesh, Nigeria, Somalia, Yemen, Syria, Iraq, Iran, Libya, Sudan → USA
+
+**UK Routes:**
+- Afghanistan, Pakistan, Bangladesh, Nigeria, Somalia, Iraq, Syria, Yemen → UK
+
+**Schengen Routes:**
+- Afghanistan, Pakistan, Bangladesh, Nigeria, Somalia, Sudan → Schengen countries
+
+**Canada Routes:**
+- Afghanistan, Pakistan, Bangladesh, Nigeria, Iran → Canada
+
+**Australia Routes:**
+- Afghanistan, Pakistan, Bangladesh, Nigeria → Australia
+
+**Note:** Applications from these routes with incomplete documentation receive automatic rejection with explanation.
+
+## 📊 Model Training
+
+### Automatic Training
+```python
+# On first run, the app automatically:
+# 1. Loads data from data/train.csv
+# 2. Engineers features
+# 3. Trains both models
+# 4. Saves to models/ directory
+```
+
+### Manual Training
+```bash
+cd src
+python main.py
+```
+
+This will:
+- Load and preprocess training data
+- Engineer all features
+- Train status and time models
+- Generate EDA visualizations in `eda_outputs/`
+- Save models to `models/` directory
+- Display performance metrics
+
+## 🎨 UI Features
+
+### Modern Design
+- Glassmorphism sidebar with semi-transparent background
+- Gradient buttons with hover effects
+- Logical grouping of fields to reduce cognitive load
+- Responsive metric cards with hover animations
+- Dynamic success and warning highlights based on prediction outcomes
+
+### User Experience
+- **Reset Functionality**: One-click reset clears all inputs, predictions, and UI states for a fresh start
+- **User-Friendly Design**: No technical knowledge required to use the application
+- **Scalable UI Structure**: Easy to extend with additional features or models
+- **Instant Prediction Feedback**: Results rendered immediately after model inference
+- **Responsive Design**: Fully responsive layout that adapts seamlessly across desktops, tablets, and different screen resolutions
+
+## 📈 Input Data Requirements
+
+### Required CSV Columns
+- `submission_date`, `decision_date` (DD-MM-YYYY format)
+- `applicant_country`, `destination_country`, `visa_category`
+- `countries_visited`, `schengen_visits`, `us_visits`, `uk_visits`
+- `applicant_age`, `previous_rejections`
+- Binary columns: `priority_processing`, `biometrics_completed`, `overstay_history`, etc.
+- Categorical: `season`, `gender`, `employment_status`, `marital_status`, `processing_office`
+
+## 🔮 Prediction API
+
+### VisaPredictionSystem Class
+
+```python
+from main import VisaPredictionSystem
+
+# Initialize system
+system = VisaPredictionSystem()
+
+# Load trained models
+system.load_models("visa_model")
+
+# Make prediction
+application_data = {
+    "applicant_country": "India",
+    "destination_country": "USA",
+    "visa_category": "Tourist",
+    # ... other fields
+}
+
+result = system.predict(application_data)
+```
+
+### Prediction Output
+```python
+{
+    "predicted_status": "Approved" or "Rejected",
+    "approval_probability": float (0-1),
+    "rejection_probability": float (0-1),
+    "estimated_processing_days": int,
+    "estimated_processing_weeks": float,
+    "high_scrutiny_route": bool
+}
+```
+
+## 📊 Exploratory Data Analysis
+
+The system generates 8 comprehensive visualization sets:
+
+1. **Target Distribution**: Application status pie chart, processing time histogram
+2. **Visa Category Analysis**: Application counts, approval rates, processing times
+3. **Geographic Analysis**: Top countries, approval rates by country
+4. **Correlation Analysis**: Feature correlation matrix
+5. **Travel History Impact**: Travel experience vs approval rates
+6. **Document Quality Analysis**: Documentation impact on outcomes
+7. **Seasonal Patterns**: Monthly trends, seasonal approval rates
+8. **Demographics Analysis**: Age distribution, employment status impact
+
+Run `perform_comprehensive_eda(df)` to generate all visualizations.
+
+
+
+## 📝 Disclaimer
+
+⚠️ **Important**: This tool provides AI-generated predictions for educational and informational purposes only. Actual visa decisions are made by immigration authorities and depend on numerous factors beyond this model's scope. Always consult official sources and qualified immigration professionals for visa-related decisions.
+
+
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+
+
+
+---
+
+**Built with ❤️ using Python, Streamlit, and ML libraries**
