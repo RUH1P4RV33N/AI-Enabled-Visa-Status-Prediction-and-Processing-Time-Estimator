@@ -31,6 +31,49 @@ import joblib
 plt.style.use("seaborn-v0_8-darkgrid")
 sns.set_palette("husl")
 
+# Route complexity indicator
+high_scrutiny_routes = [
+    # USA
+    ("Afghanistan", "USA"),
+    ("Pakistan", "USA"),
+    ("Bangladesh", "USA"),
+    ("Nigeria", "USA"),
+    ("Somalia", "USA"),
+    ("Yemen", "USA"),
+    ("Syria", "USA"),
+    ("Iraq", "USA"),
+    ("Iran", "USA"),
+    ("Libya", "USA"),
+    ("Sudan", "USA"),
+    # UK
+    ("Afghanistan", "UK"),
+    ("Pakistan", "UK"),
+    ("Bangladesh", "UK"),
+    ("Nigeria", "UK"),
+    ("Somalia", "UK"),
+    ("Iraq", "UK"),
+    ("Syria", "UK"),
+    ("Yemen", "UK"),
+    # Schengen (generalized as destination)
+    ("Afghanistan", "Schengen"),
+    ("Pakistan", "Schengen"),
+    ("Bangladesh", "Schengen"),
+    ("Nigeria", "Schengen"),
+    ("Somalia", "Schengen"),
+    ("Sudan", "Schengen"),
+    # Canada
+    ("Afghanistan", "Canada"),
+    ("Pakistan", "Canada"),
+    ("Bangladesh", "Canada"),
+    ("Nigeria", "Canada"),
+    ("Iran", "Canada"),
+    # Australia
+    ("Afghanistan", "Australia"),
+    ("Pakistan", "Australia"),
+    ("Bangladesh", "Australia"),
+    ("Nigeria", "Australia"),
+]
+
 
 def load_and_preprocess_data(filepath):
     print(f"\nLoading data...")
@@ -53,30 +96,24 @@ def load_and_preprocess_data(filepath):
 
 
 def engineer_features(df):
-    print("\nAdding features...")
+    """Create advanced features for better predictions"""
+    print("\n🔧 Engineering features...")
 
-    # Travel history score
+    # Travel history score - normalized properly
+    max_realistic_travel = 15 * 2 + 5 * 4 + 3 * 5 + 3 * 3  # 74
     df["travel_score"] = (
         df["countries_visited"] * 2
         + df["schengen_visits"] * 4
         + df["us_visits"] * 5
         + df["uk_visits"] * 3
-    ) / 95
+    ) / max_realistic_travel
+    df["travel_score"] = df["travel_score"].clip(0, 1)
 
     # Documentation quality score
     df["doc_quality_score"] = (
         (df["document_completeness"] == "Yes").astype(int) * 0.4
         + (df["supporting_docs_provided"] == "Yes").astype(int) * 0.3
         + (df["financial_docs_provided"] == "Yes").astype(int) * 0.3
-    )
-
-    # Risk factors
-    df["risk_score"] = (
-        (df["overstay_history"] == "Yes").astype(int) * 0.3
-        + df["previous_rejections"] * 0.15
-        + (df["document_completeness"] == "No").astype(int) * 0.25
-        + (df["supporting_docs_provided"] == "No").astype(int) * 0.15
-        + (df["financial_docs_provided"] == "No").astype(int) * 0.15
     )
 
     # Age groups
@@ -93,31 +130,6 @@ def engineer_features(df):
         labels=["None", "Limited", "Moderate", "Extensive"],
     )
 
-    # High security screening routes
-    high_scrutiny_routes = [
-        ("India", "USA"),
-        ("China", "USA"),
-        ("Pakistan", "USA"),
-        ("Nigeria", "USA"),
-        ("Nigeria", "UK"),
-        ("Bangladesh", "USA"),
-        ("Iran", "USA"),
-        ("Syria", "Germany"),
-        ("Afghanistan", "USA"),
-        ("Iraq", "UK"),
-        ("Somalia", "USA"),
-        ("Yemen", "UK"),
-        ("India", "UK"),
-        ("Pakistan", "UK"),
-        ("Egypt", "USA"),
-        ("Algeria", "France"),
-        ("Pakistan", "France"),
-        ("Pakistan", "Germany"),
-        ("Afghanistan", "Germany"),
-        ("Syria", "UK"),
-        ("Iraq", "France"),
-        ("Somalia", "UK"),
-    ]
     df["high_scrutiny_route"] = df.apply(
         lambda x: 1
         if (x["applicant_country"], x["destination_country"]) in high_scrutiny_routes
@@ -125,8 +137,28 @@ def engineer_features(df):
         axis=1,
     )
 
-    print(f"\nCreated {len(df.columns)} total features\n")
-    print(df.columns.to_list())
+    # Risk factors - HEAVILY WEIGHTED for high scrutiny routes with weak documentation
+    # High scrutiny route + incomplete docs or red flags = very high risk
+    df["risk_score"] = (
+        (df["overstay_history"] == "Yes").astype(int) * 0.35
+        + (df["previous_rejections"] * 0.2).clip(0, 0.4)
+        + (df["document_completeness"] == "No").astype(int) * 0.2
+        + (df["supporting_docs_provided"] == "No").astype(int) * 0.15
+        + (df["financial_docs_provided"] == "No").astype(int) * 0.15
+        # HIGH SCRUTINY PENALTY: If on scrutiny route + ANY documentation issue
+        + (
+            df["high_scrutiny_route"]
+            * (
+                (df["document_completeness"] == "No").astype(int)
+                + (df["supporting_docs_provided"] == "No").astype(int)
+                + (df["financial_docs_provided"] == "No").astype(int)
+            )
+            * 0.25  # Major penalty multiplier
+        )
+    )
+    df["risk_score"] = df["risk_score"].clip(0, 1)  # Cap at 1.0
+
+    print(f"✓ Created {len(df.columns)} total features")
     return df
 
 
@@ -403,32 +435,83 @@ class VisaPredictionSystem:
         return status_acc, time_mae
 
     def save_models(self, prefix="visa_model"):
-        """Save trained models"""
+        """Save trained models with absolute path"""
+        import os
 
-        models_dir = "../models"  # Go up one level from src, then into models/
+        # Get absolute path to project root
+        current_file = os.path.abspath(__file__)  # Full path to main.py
+        src_dir = os.path.dirname(current_file)  # Path to src/ folder
+        project_root = os.path.dirname(src_dir)  # Path to project root
+        models_dir = os.path.join(project_root, "models")  # Path to models/ folder
 
         # Create folder if it does not exist
         os.makedirs(models_dir, exist_ok=True)
 
-        print(f"\nSaving models to '{models_dir}/' with prefix '{prefix}'...")
+        print(f"\n{'=' * 60}")
+        print(f"SAVING MODELS")
+        print(f"{'=' * 60}")
+        print(f"Models directory: {models_dir}")
 
-        joblib.dump(self.status_model, f"{models_dir}/{prefix}_status.pkl")
-        joblib.dump(self.time_model, f"{models_dir}/{prefix}_time.pkl")
-        joblib.dump(self.label_encoders, f"{models_dir}/{prefix}_encoders.pkl")
-        joblib.dump(self.feature_cols, f"{models_dir}/{prefix}_features.pkl")
+        # Save with absolute paths
+        status_path = os.path.join(models_dir, f"{prefix}_status.pkl")
+        time_path = os.path.join(models_dir, f"{prefix}_time.pkl")
+        encoders_path = os.path.join(models_dir, f"{prefix}_encoders.pkl")
+        features_path = os.path.join(models_dir, f"{prefix}_features.pkl")
 
-        print("Models saved successfully")
+        joblib.dump(self.status_model, status_path)
+        joblib.dump(self.time_model, time_path)
+        joblib.dump(self.label_encoders, encoders_path)
+        joblib.dump(self.feature_cols, features_path)
+
+        print(f"✓ Saved: {status_path}")
+        print(f"✓ Models saved successfully!")
+        print(f"{'=' * 60}\n")
 
     def load_models(self, prefix="visa_model"):
-        """Load trained models"""
-        models_dir = "../models"  # Go up one level from src, then into models/
-        print(f"\nLoading models from '{models_dir}/' with prefix '{prefix}'...")
-        self.status_model = joblib.load(f"{models_dir}/{prefix}_status.pkl")
-        self.time_model = joblib.load(f"{models_dir}/{prefix}_time.pkl")
-        self.label_encoders = joblib.load(f"{models_dir}/{prefix}_encoders.pkl")
-        self.feature_cols = joblib.load(f"{models_dir}/{prefix}_features.pkl")
+        """Load trained models with absolute path"""
+        import os
 
-        print("Models loaded successfully")
+        # Get absolute path to project root
+        current_file = os.path.abspath(__file__)  # Full path to main.py
+        src_dir = os.path.dirname(current_file)  # Path to src/ folder
+        project_root = os.path.dirname(src_dir)  # Path to project root
+        models_dir = os.path.join(project_root, "models")  # Path to models/ folder
+
+        print(f"\n{'=' * 60}")
+        print(f"LOADING MODELS")
+        print(f"{'=' * 60}")
+        print(f"Models directory: {models_dir}")
+
+        if not os.path.exists(models_dir):
+            raise FileNotFoundError(
+                f"\n❌ Models directory not found at: {models_dir}\n"
+                f"Please run 'python main.py' from the src/ folder to train models first."
+            )
+
+        # Build absolute paths
+        status_path = os.path.join(models_dir, f"{prefix}_status.pkl")
+        time_path = os.path.join(models_dir, f"{prefix}_time.pkl")
+        encoders_path = os.path.join(models_dir, f"{prefix}_encoders.pkl")
+        features_path = os.path.join(models_dir, f"{prefix}_features.pkl")
+
+        # Check all files exist
+        for name, path in [
+            ("Status", status_path),
+            ("Time", time_path),
+            ("Encoders", encoders_path),
+            ("Features", features_path),
+        ]:
+            if not os.path.exists(path):
+                raise FileNotFoundError(f"Missing {name} model: {path}")
+
+        # Load the models
+        self.status_model = joblib.load(status_path)
+        self.time_model = joblib.load(time_path)
+        self.label_encoders = joblib.load(encoders_path)
+        self.feature_cols = joblib.load(features_path)
+
+        print(f"✓ All models loaded successfully!")
+        print(f"{'=' * 60}\n")
 
     def predict(self, application_data):
         """Predict visa status and processing time for new application"""
@@ -438,7 +521,27 @@ class VisaPredictionSystem:
         else:
             df_app = application_data.copy()
 
-        # Engineer features
+        # CHECK HIGH SCRUTINY ROUTE FIRST - AUTOMATIC REJECTION
+        applicant_country = df_app.iloc[0]["applicant_country"]
+        destination_country = df_app.iloc[0]["destination_country"]
+
+        if (applicant_country, destination_country) in high_scrutiny_routes:
+            print(
+                f"\n⚠️  HIGH SCRUTINY ROUTE DETECTED: {applicant_country} → {destination_country}"
+            )
+            print(f"⛔ AUTOMATIC REJECTION APPLIED")
+
+            return {
+                "predicted_status": "Rejected",
+                "approval_probability": 0.0,
+                "rejection_probability": 1.0,
+                "estimated_processing_days": 30,  # Standard rejection processing time
+                "estimated_processing_weeks": 4.3,
+                "rejection_reason": "High Scrutiny Route - Automatic Rejection",
+                "high_scrutiny_route": True,
+            }
+
+        # Engineer features for non-scrutiny routes
         df_app = engineer_features(df_app)
 
         # Prepare features
@@ -474,7 +577,6 @@ class VisaPredictionSystem:
         ]
         for col in categorical_cols:
             if col in self.label_encoders:
-                # Handle unseen categories
                 le = self.label_encoders[col]
                 df_model[col + "_encoded"] = (
                     df_model[col]
@@ -496,6 +598,7 @@ class VisaPredictionSystem:
             "rejection_probability": float(status_proba[0]),
             "estimated_processing_days": time_pred,
             "estimated_processing_weeks": round(time_pred / 7, 1),
+            "high_scrutiny_route": False,
         }
 
         return result
@@ -543,10 +646,10 @@ if __name__ == "__main__":
         "season": "Summer",
         "priority_processing": "No",
         "biometrics_completed": "Yes",
-        "countries_visited": 12,
-        "schengen_visits": 3,
-        "us_visits": 1,
-        "uk_visits": 2,
+        "countries_visited": 0,
+        "schengen_visits": 0,
+        "us_visits": 0,
+        "uk_visits": 0,
         "overstay_history": "No",
         "previous_rejections": 0,
         "applicant_age": 32,
