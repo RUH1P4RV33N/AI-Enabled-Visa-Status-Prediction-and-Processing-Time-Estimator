@@ -27,11 +27,10 @@ env/
 Thumbs.db
 
 # Model files and outputs
-*.pkl
+
 *.h5
 *.pt
 *.pth
-models/
 checkpoints/
 
 # Logs
